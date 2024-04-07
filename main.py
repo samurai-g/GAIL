@@ -1,4 +1,5 @@
 import pandas as pd
+import numpy as np
 import random
 import math
 import functools
@@ -15,6 +16,14 @@ cities_df = pd.read_csv('european-cities.csv')
 
 def to_radians(degrees):
     return degrees * math.pi / 180.0
+
+def initialize_population(size=10):
+    population = []
+    for _ in range(size):
+        route = list(range(len(cities_df)))  # Use indices of the cities DataFrame
+        random.shuffle(route)
+        population.append(route)
+    return population
 
 #Calculate distance with haversine
 @functools.lru_cache(maxsize=None) #this does nothing...
@@ -34,39 +43,51 @@ def calculate_distance(lat1, lon1, lat2, lon2):
     
     return distance
 
-def initialize_population(size=10):
-    population = []
-    for _ in range(size):
-        route = list(range(len(cities_df)))  # Use indices of the cities DataFrame
-        random.shuffle(route)
-        population.append(route)
-    return population
+def calculate_distance_matrix(cities_df):
+    """Calculates and returns a matrix of distances between cities."""
+    num_cities = len(cities_df)
+    distance_matrix = np.zeros((num_cities, num_cities))
 
-def route_distance(route):
+    for i in range(num_cities):
+        for j in range(i + 1, num_cities):  # Avoid redundant calculations
+            # Correctly access latitude and longitude for cities i and j
+            lat1 = cities_df.iloc[i]['latitude']
+            lon1 = cities_df.iloc[i]['longitude']
+            lat2 = cities_df.iloc[j]['latitude']
+            lon2 = cities_df.iloc[j]['longitude']
 
-    distance_meters = 0
-    distance_km = 0
-    total_distance_km = 0
+            # Calculate distance using the corrected function signature
+            dist = calculate_distance(lat1, lon1, lat2, lon2)
+            distance_matrix[i, j] = dist
+            distance_matrix[j, i] = dist  # Symmetric matrix
 
-    #Calculate the distance for each route city[0] to city[1], city[1] to city[2],...
-    for i in range(100):
-        j = (i + 1) % 100 # Wrap around to the start for the last city
-        city_a_index = route[i]
-        city_b_index = route[j]
-        city_a = cities_df.iloc[city_a_index]
-        city_b = cities_df.iloc[city_b_index]
-        #Calculate distance with Haversine
-        distance_meters = calculate_distance(city_a['latitude'], city_a['longitude'],
-                                             city_b['latitude'], city_b['longitude'])
-        distance_km = distance_meters / 1000  # Convert distance to kilometers
-        #DEBUG: Distances for each trip
-        #print("City " + str(i) + " -> " + str(j) + ": " + str(distance_km))
-        total_distance_km += distance_km
-
-    return total_distance_km
+    return distance_matrix
 
 
-# DEBUG: usage until here
+def evaluate_route(route, distance_matrix):
+    total_distance = 0
+    max_consecutive_distance = 0
+    for i in range(len(route)):
+        j = (i + 1) % len(route)  # Ensure we loop back to the start for a round trip
+
+        # Access the precomputed distance directly from the distance_matrix
+        distance = distance_matrix[route[i], route[j]]
+        
+        total_distance += distance / 1000  # convert to km
+        max_consecutive_distance = max(max_consecutive_distance, distance)
+    return total_distance, max_consecutive_distance
+
+
+def fitness_function(route, optimize_for_max_distance=False):
+    total_distance, max_consecutive_distance = evaluate_route(route, distance_matrix)
+    if optimize_for_max_distance:
+        # Apply a strategy to penalize routes with large max distances between cities
+        # This is a simplistic approach; adjust based on experimentation
+        penalty = max_consecutive_distance * 0.1  # Example penalty factor
+        return total_distance + penalty
+    else:
+        return total_distance
+
 #population = initialize_population(5)  # Smaller population is faster
 #total_distances = [route_distance(route) for route in population]
 
@@ -97,9 +118,6 @@ def mutate(route, mutation_rate=0.01):
             route[i], route[swap_index] = route[swap_index], route[i]
     return route
 
-def calculate_generation_distances(population):
-    return [route_distance(route) for route in population]
-
 def next_generation(current_gen, distances, elite_size=5, mutation_rate=0.01):
     new_generation = []
     population_size = len(current_gen)
@@ -117,19 +135,25 @@ def next_generation(current_gen, distances, elite_size=5, mutation_rate=0.01):
         new_generation.append(child)
 
     # Calculate distances for the new generation
-    new_distances = calculate_generation_distances(new_generation)
+    new_distances = [fitness_function(route, optimize_max_distance) for route in new_generation]
     return new_generation, new_distances
 
+
 # DEBUG: usage until here
+optimize_max_distance = False  # depending on user input TO-DO: command line args
+
+# Calculate distance matrix
+distance_matrix = calculate_distance_matrix(cities_df)
+
 # Initialize first generation
-population_size = 5
+population_size = 200
 population = initialize_population(population_size)
-distances = calculate_generation_distances(population)
+distances = [fitness_function(route, optimize_max_distance) for route in population]
 
 # Run the genetic algorithm for a number of generations
-num_generations = 200
-elite_size=20
-mutation_rate=0.02
+num_generations = 1000
+elite_size=25
+mutation_rate=0.01
 
 print("Population size: " + str(population_size))
 print("Num of generations: " + str(num_generations))
@@ -146,11 +170,16 @@ for _ in range(num_generations):
 
     # Find the best route in the current generation using the cached distances
     best_route_index = min(range(len(population)), key=lambda i: distances[i])
-    best_distance = distances[best_route_index]
+    best_route = population[best_route_index]
+    best_distance, longest_single_leg = evaluate_route(best_route, distance_matrix)
 
     #print("Best route:" + str(best_route))
     if _ % 5 == 0:
         print("Best distance on run nr." + str(_+1)+ ": " + str(best_distance))
+
+        if optimize_max_distance:
+            print(f"Generation {_+1}: Max consecutive distance in the best route: {longest_single_leg}")
+
 
 end_time = time.time()
 
