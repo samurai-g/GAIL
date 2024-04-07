@@ -74,7 +74,7 @@ def evaluate_route(route, distance_matrix):
         distance = distance_matrix[route[i], route[j]]
         
         total_distance += distance / 1000  # convert to km
-        max_consecutive_distance = max(max_consecutive_distance, distance)
+        max_consecutive_distance = max(max_consecutive_distance, distance) / 1000 # longest single leg, also km
     return total_distance, max_consecutive_distance
 
 
@@ -83,7 +83,7 @@ def fitness_function(route, optimize_for_max_distance=False):
     if optimize_for_max_distance:
         # Apply a strategy to penalize routes with large max distances between cities
         # This is a simplistic approach; adjust based on experimentation
-        penalty = max_consecutive_distance * 0.1  # Example penalty factor
+        penalty = max_consecutive_distance * 0.5  # Example penalty factor
         return total_distance + penalty
     else:
         return total_distance
@@ -140,7 +140,7 @@ def next_generation(current_gen, distances, elite_size=5, mutation_rate=0.01):
 
 
 # DEBUG: usage until here
-optimize_max_distance = False  # depending on user input TO-DO: command line args
+optimize_max_distance = True  # depending on user input TO-DO: command line args
 
 # Calculate distance matrix
 distance_matrix = calculate_distance_matrix(cities_df)
@@ -178,7 +178,7 @@ for _ in range(num_generations):
         print("Best distance on run nr." + str(_+1)+ ": " + str(best_distance))
 
         if optimize_max_distance:
-            print(f"Generation {_+1}: Max consecutive distance in the best route: {longest_single_leg}")
+            print(f"Generation {_+1}: Longest leg in the best route: {longest_single_leg}")
 
 
 end_time = time.time()
