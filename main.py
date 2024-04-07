@@ -2,6 +2,10 @@ import pandas as pd
 import random
 import math
 import functools
+import time
+
+start_time = time.time()
+
 
 # Load the CSV file containing the European cities
 cities_df = pd.read_csv('european-cities.csv')
@@ -117,13 +121,22 @@ def next_generation(current_gen, distances, elite_size=5, mutation_rate=0.01):
 
 # DEBUG: usage until here
 # Initialize first generation
-population = initialize_population(50)
+population_size = 60
+population = initialize_population(population_size)
 distances = calculate_generation_distances(population)
 
 # Run the genetic algorithm for a number of generations
-num_generations = 100
+num_generations = 200
+elite_size=20
+mutation_rate=0.02
+
+print("Population size: " + str(population_size))
+print("Num of generations: " + str(num_generations))
+print("Elite size: " + str(elite_size))
+print("Mutation rate: " + str(mutation_rate))
+
 for _ in range(num_generations):
-    population, distances = next_generation(population, distances, elite_size=15, mutation_rate=0.01)
+    population, distances = next_generation(population, distances, elite_size, mutation_rate)
 
     # Find the best route in the final generation
     #best_route_index = min(range(len(population)), key=lambda i: route_distance(population[i]))
@@ -135,7 +148,11 @@ for _ in range(num_generations):
     best_distance = distances[best_route_index]
 
     #print("Best route:" + str(best_route))
-    print("Best distance on run nr." + str(_+1)+ ": " + str(best_distance))
+    if _ % 5 == 0:
+        print("Best distance on run nr." + str(_+1)+ ": " + str(best_distance))
+
+end_time = time.time()
+print("Total execution time: + " + end_time + " seconds")
 
 
 
