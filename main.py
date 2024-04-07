@@ -10,13 +10,14 @@ start_time = time.time()
 # Load the CSV file containing the European cities
 cities_df = pd.read_csv('european-cities.csv')
 
-# Display the first few rows to understand the structure
-print(cities_df.head())
+# Display the first few rows to debug
+#print(cities_df.head())
 
 def to_radians(degrees):
     return degrees * math.pi / 180.0
 
-@functools.lru_cache(maxsize=None)
+#Calculate distance with haversine
+@functools.lru_cache(maxsize=None) #this does nothing...
 def calculate_distance(lat1, lon1, lat2, lon2):
     EarthRadius = 6371000.0  # Radius of the Earth in meters
     
@@ -33,7 +34,7 @@ def calculate_distance(lat1, lon1, lat2, lon2):
     
     return distance
 
-def initialize_population(size=50):
+def initialize_population(size=10):
     population = []
     for _ in range(size):
         route = list(range(len(cities_df)))  # Use indices of the cities DataFrame
@@ -152,7 +153,7 @@ for _ in range(num_generations):
         print("Best distance on run nr." + str(_+1)+ ": " + str(best_distance))
 
 end_time = time.time()
-print("Total execution time: + " + end_time + " seconds")
+print("Total execution time: + " + str(end_time) + " seconds")
 
 
 
