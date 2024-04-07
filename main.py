@@ -122,7 +122,7 @@ def next_generation(current_gen, distances, elite_size=5, mutation_rate=0.01):
 
 # DEBUG: usage until here
 # Initialize first generation
-population_size = 60
+population_size = 5
 population = initialize_population(population_size)
 distances = calculate_generation_distances(population)
 
@@ -153,7 +153,10 @@ for _ in range(num_generations):
         print("Best distance on run nr." + str(_+1)+ ": " + str(best_distance))
 
 end_time = time.time()
-print("Total execution time: + " + str(end_time) + " seconds")
+
+total_time = end_time - start_time
+
+print("Total execution time: " + str(total_time) + " seconds")
 
 
 
