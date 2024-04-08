@@ -17,7 +17,7 @@
 
 # Optimal Routes Length: After running the algorithm through several generations, it found routes that were significantly shorter than our initial random ones. 
 # At the first the distance reduced drastically from generation to generation but the closer we got to an optimal solution the smaller the change in distance was. 
-# This reminded me of the concept of diminishing return (“Ertragsgesetz”).
+# This reminded me of the law of diminishing return (Ertragsgesetz).
 
 import pandas as pd
 import numpy as np
