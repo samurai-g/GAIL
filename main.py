@@ -53,27 +53,28 @@ def calculate_distance(lat1, lon1, lat2, lon2):
     
     return distance
 
+# Create a distance matrix for all city pairs to optimize distance calculations
 def calculate_distance_matrix(cities_df):
-    """Calculates and returns a matrix of distances between cities."""
     num_cities = len(cities_df)
+    #Create matrix
     distance_matrix = np.zeros((num_cities, num_cities))
 
-    for i in range(num_cities):
-        for j in range(i + 1, num_cities):  # Avoid redundant calculations
+    for city_from in range(num_cities):
+        for city_to in range(num_cities):  # Avoid redundant calculations
             # Correctly access latitude and longitude for cities i and j
-            lat1 = cities_df.iloc[i]['latitude']
-            lon1 = cities_df.iloc[i]['longitude']
-            lat2 = cities_df.iloc[j]['latitude']
-            lon2 = cities_df.iloc[j]['longitude']
+            lat1 = cities_df.iloc[city_from]['latitude']
+            lon1 = cities_df.iloc[city_from]['longitude']
+            lat2 = cities_df.iloc[city_to]['latitude']
+            lon2 = cities_df.iloc[city_to]['longitude']
 
             # Calculate distance using the corrected function signature
             dist = calculate_distance(lat1, lon1, lat2, lon2)
-            distance_matrix[i, j] = dist
-            distance_matrix[j, i] = dist  # Symmetric matrix
+            distance_matrix[city_from, city_to] = dist
+            distance_matrix[city_to, city_from] = dist  # Symmetric matrix
 
     return distance_matrix
 
-
+# Evaluate a route tolal distance and the maximum distance between any two consecutive cities
 def evaluate_route(route, distance_matrix):
     total_distance = 0
     max_consecutive_distance = 0
@@ -87,13 +88,13 @@ def evaluate_route(route, distance_matrix):
         max_consecutive_distance = max(max_consecutive_distance, distance) / 1000 # longest single leg, also km
     return total_distance, max_consecutive_distance
 
-
+# Fitness function to evaluate the quality of a route
 def fitness_function(route, distance_matrix, optimize_for_max_distance=False):
     total_distance, max_consecutive_distance = evaluate_route(route, distance_matrix)
     if optimize_for_max_distance:
-        # Apply a strategy to penalize routes with large max distances between cities
+        # Penalty routes with large max distances between cities
         # This is a simplistic approach; adjust based on experimentation
-        penalty = max_consecutive_distance * 0.5  # Example penalty factor
+        penalty = max_consecutive_distance * 0.5  # Example penalty factor, this makes route overall longer
         return total_distance + penalty
     else:
         return total_distance
@@ -101,13 +102,14 @@ def fitness_function(route, distance_matrix, optimize_for_max_distance=False):
 #population = initialize_population(5)  # Smaller population is faster
 #total_distances = [route_distance(route) for route in population]
 
+# Use tournament selection
 def tournament_selection(population, distances, tournament_size=5):
     tournament_indices = random.sample(range(len(population)), tournament_size)
     best_index = min(tournament_indices, key=lambda i: distances[i])
     return population[best_index]
 
+# Combine two routes into a new route using ordered crossover
 def ordered_crossover(parent1, parent2):
-    #"""Performs ordered crossover between two parents."""
     start, end = sorted(random.sample(range(len(parent1)), 2))
     child = [None] * len(parent1)
     
@@ -120,7 +122,7 @@ def ordered_crossover(parent1, parent2):
     
     return child
 
-#"""Performs a swap mutation on a route."""
+# Mutate a route by swapping two cities
 def mutate(route, mutation_rate=0.01):
     for i in range(len(route)):
         if random.random() < mutation_rate:
@@ -128,6 +130,7 @@ def mutate(route, mutation_rate=0.01):
             route[i], route[swap_index] = route[swap_index], route[i]
     return route
 
+# Generate the next generation of routes
 def next_generation(current_gen, distances, elite_size, mutation_rate, distance_matrix, optimize_max_distance):
     new_generation = []
     population_size = len(current_gen)
