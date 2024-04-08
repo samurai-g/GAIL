@@ -26,7 +26,7 @@ def initialize_population(size=10):
     return population
 
 #Calculate distance with haversine
-@functools.lru_cache(maxsize=None) #this does nothing...
+@functools.lru_cache(maxsize=None) #this does nothing(?)
 def calculate_distance(lat1, lon1, lat2, lon2):
     EarthRadius = 6371000.0  # Radius of the Earth in meters
     
