@@ -4,15 +4,29 @@ import random
 import math
 import functools
 import time
+import argparse
 
 start_time = time.time()
 
-
 # Load the CSV file containing the European cities
 cities_df = pd.read_csv('european-cities.csv')
+#cities_df = pd.read_csv(args.cities)
 
 # Display the first few rows to debug
 #print(cities_df.head())
+
+def parse_args():
+    parser = argparse.ArgumentParser(description='Solve the Traveling Salesperson Problem with a Genetic Algorithm.')
+    # Set default CSV file location to 'cities.csv'. Adjust the default path as necessary.
+    parser.add_argument('--cities', type=str, default='cities.csv', help='CSV file containing city coordinates. Default is "cities.csv".')
+    # Set default output file location to 'route.txt'. Adjust the default path as necessary.
+    parser.add_argument('--output', type=str, default='route.txt', help='Text file to save the calculated route. Default is "route.txt".')
+    # If not specified, do not limit the search (use a very high value to simulate "no limit").
+    parser.add_argument('--limit', type=float, default=float(2000), help='Terminate when the shortest route is <= this length in kilometers. Default is no limit.')
+    # The absence of --secondary implies it's not used, so no default change needed.
+    parser.add_argument('--secondary', action='store_true', help='Run with the secondary optimality criterion. Default is False.')
+    return parser.parse_args()
+
 
 def to_radians(degrees):
     return degrees * math.pi / 180.0
@@ -78,7 +92,7 @@ def evaluate_route(route, distance_matrix):
     return total_distance, max_consecutive_distance
 
 
-def fitness_function(route, optimize_for_max_distance=False):
+def fitness_function(route, distance_matrix, optimize_for_max_distance=False):
     total_distance, max_consecutive_distance = evaluate_route(route, distance_matrix)
     if optimize_for_max_distance:
         # Apply a strategy to penalize routes with large max distances between cities
@@ -118,7 +132,7 @@ def mutate(route, mutation_rate=0.01):
             route[i], route[swap_index] = route[swap_index], route[i]
     return route
 
-def next_generation(current_gen, distances, elite_size=5, mutation_rate=0.01):
+def next_generation(current_gen, distances, elite_size, mutation_rate, distance_matrix, optimize_max_distance):
     new_generation = []
     population_size = len(current_gen)
     
@@ -135,57 +149,73 @@ def next_generation(current_gen, distances, elite_size=5, mutation_rate=0.01):
         new_generation.append(child)
 
     # Calculate distances for the new generation
-    new_distances = [fitness_function(route, optimize_max_distance) for route in new_generation]
+    new_distances = [fitness_function(route, distance_matrix, optimize_max_distance) for route in new_generation]
     return new_generation, new_distances
 
 
-# DEBUG: usage until here
-optimize_max_distance = True  # depending on user input TO-DO: command line args
 
-# Calculate distance matrix
-distance_matrix = calculate_distance_matrix(cities_df)
+def main():
 
-# Initialize first generation
-population_size = 200
-population = initialize_population(population_size)
-distances = [fitness_function(route, optimize_max_distance) for route in population]
+    args = parse_args()
 
-# Run the genetic algorithm for a number of generations
-num_generations = 1000
-elite_size=25
-mutation_rate=0.01
+    # DEBUG: usage until here
+    optimize_max_distance = args.secondary  # depending on user input TO-DO: command line args
 
-print("Population size: " + str(population_size))
-print("Num of generations: " + str(num_generations))
-print("Elite size: " + str(elite_size))
-print("Mutation rate: " + str(mutation_rate))
+    # Calculate distance matrix
+    distance_matrix = calculate_distance_matrix(cities_df)
 
-for _ in range(num_generations):
-    population, distances = next_generation(population, distances, elite_size, mutation_rate)
+    # Initialize first generation
+    population_size = 100
+    population = initialize_population(population_size)
+    distances = [fitness_function(route, distance_matrix, optimize_max_distance) for route in population]
 
-    # Find the best route in the final generation
-    #best_route_index = min(range(len(population)), key=lambda i: route_distance(population[i]))
-    #best_route = population[best_route_index]
-    #best_distance = route_distance(best_route)
+    # Run the genetic algorithm for a number of generations
+    num_generations = 500
+    elite_size=15
+    mutation_rate=0.01
 
-    # Find the best route in the current generation using the cached distances
-    best_route_index = min(range(len(population)), key=lambda i: distances[i])
-    best_route = population[best_route_index]
-    best_distance, longest_single_leg = evaluate_route(best_route, distance_matrix)
+    print("Population size: " + str(population_size))
+    print("Num of generations: " + str(num_generations))
+    print("Elite size: " + str(elite_size))
+    print("Mutation rate: " + str(mutation_rate))
 
-    #print("Best route:" + str(best_route))
-    if _ % 5 == 0:
-        print("Best distance on run nr." + str(_+1)+ ": " + str(best_distance))
+    for generation in range(num_generations):
+        population, distances = next_generation(population, distances, elite_size, mutation_rate, distance_matrix, optimize_max_distance)
 
-        if optimize_max_distance:
-            print(f"Generation {_+1}: Longest leg in the best route: {longest_single_leg}")
+        # Find the best route in the final generation
+        #best_route_index = min(range(len(population)), key=lambda i: route_distance(population[i]))
+        #best_route = population[best_route_index]
+        #best_distance = route_distance(best_route)
+
+        # Find the best route in the current generation using the cached distances
+        best_route_index = min(range(len(population)), key=lambda i: distances[i])
+        best_route = population[best_route_index]
+        best_distance, longest_single_leg = evaluate_route(best_route, distance_matrix)
+
+        #print("Best route:" + str(best_route))
+        if generation % 50 == 0:
+            print(f"Generation {generation}: Shortest roundtrip in the best route: {best_distance}")
+            print(f"Generation {generation}: Longest leg in the best route: {longest_single_leg}")
+
+        if args.limit and best_distance <= args.limit:
+            print(f"Terminating early: Found a route shorter than {args.limit} km.")
+            break
 
 
-end_time = time.time()
+    end_time = time.time()
 
-total_time = end_time - start_time
+    total_time = end_time - start_time
 
-print("Total execution time: " + str(total_time) + " seconds")
+    print("Total execution time: " + str(total_time) + " seconds")
+
+    # Save the calculated route to the output file
+    with open(args.output, 'w') as f:
+        # Here, you would format and write the best_route and best_distance to the file
+        f.write(f'Best route: {best_route}\n')
+        f.write(f'Total distance: {best_distance} km')
+
+if __name__ == '__main__':
+    main()
 
 
 
