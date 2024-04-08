@@ -17,13 +17,9 @@ cities_df = pd.read_csv('european-cities.csv')
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Solve the Traveling Salesperson Problem with a Genetic Algorithm.')
-    # Set default CSV file location to 'cities.csv'. Adjust the default path as necessary.
     parser.add_argument('--cities', type=str, default='cities.csv', help='CSV file containing city coordinates. Default is "cities.csv".')
-    # Set default output file location to 'route.txt'. Adjust the default path as necessary.
     parser.add_argument('--output', type=str, default='route.txt', help='Text file to save the calculated route. Default is "route.txt".')
-    # If not specified, do not limit the search (use a very high value to simulate "no limit").
-    parser.add_argument('--limit', type=float, default=float(2000), help='Terminate when the shortest route is <= this length in kilometers. Default is no limit.')
-    # The absence of --secondary implies it's not used, so no default change needed.
+    parser.add_argument('--limit', type=float, default=float(30000), help='Terminate when the shortest route is <= this length in kilometers. Default is no limit.')
     parser.add_argument('--secondary', action='store_true', help='Run with the secondary optimality criterion. Default is False.')
     return parser.parse_args()
 
@@ -124,8 +120,8 @@ def ordered_crossover(parent1, parent2):
     
     return child
 
+#"""Performs a swap mutation on a route."""
 def mutate(route, mutation_rate=0.01):
-    #"""Performs a swap mutation on a route."""
     for i in range(len(route)):
         if random.random() < mutation_rate:
             swap_index = random.randint(0, len(route) - 1)
@@ -201,16 +197,15 @@ def main():
             print(f"Terminating early: Found a route shorter than {args.limit} km.")
             break
 
-
+    # Time stuff
     end_time = time.time()
-
     total_time = end_time - start_time
 
     print("Total execution time: " + str(total_time) + " seconds")
 
     # Save the calculated route to the output file
     with open(args.output, 'w') as f:
-        # Here, you would format and write the best_route and best_distance to the file
+        # Write the best route and best distance to the file
         f.write(f'Best route: {best_route}\n')
         f.write(f'Total distance: {best_distance} km')
 
