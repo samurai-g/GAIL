@@ -115,7 +115,7 @@ def fitness_function(route, distance_matrix, optimize_for_max_distance=False):
     if optimize_for_max_distance:
         # Penalty routes with large max distances between cities
         # This is a simplistic approach; adjust based on experimentation
-        penalty = max_consecutive_distance * 0.5  # Example penalty factor, this makes route overall longer
+        penalty = max_consecutive_distance * 0.75  # Example penalty factor, this makes route overall longer
         return total_distance + penalty
     else:
         return total_distance
@@ -185,13 +185,13 @@ def main():
     distance_matrix = calculate_distance_matrix(cities_df)
 
     # Initialize first generation
-    population_size = 100
+    population_size = 300
     population = initialize_population(population_size)
     distances = [fitness_function(route, distance_matrix, optimize_max_distance) for route in population]
 
     # Run the genetic algorithm for a number of generations
     num_generations = 500
-    elite_size=15
+    elite_size=30
     mutation_rate=0.01
 
     print("Population size: " + str(population_size))
