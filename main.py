@@ -1,3 +1,24 @@
+# Traveling Salesman Problem Assignment Explanation
+
+# In this assignment, we were tasked with solving the Traveling Salesman Problem (TSP) for 100 European cities using a genetic algorithm. 
+# This was my first time working with such algorithms, so it was quite a learning curve.
+
+# Generating Populations: We started by creating an initial population of routes. 
+# Each route is essentially a list of the cities in a random order, representing a possible solution to the TSP. 
+# Looking at the mean of our population showed us that the expected mean (Erwartungswert) for such a route is above 100.000 km.
+
+# Mutations: To potentially find better routes, we applied mutations. 
+# This involved randomly swapping two cities in a route. 
+# The hope was that, by making these small changes, we could generate more efficient paths.
+
+# Fitness Function: The  fitness function evaluates how good a route is based on its total distance. 
+# The shorter the distance, the better the route. The  distances are calculated using the haversine formula. 
+# Additionally, we tried to minimize the longest leg between any two cities to avoid routes with very long stretches (secondary criteria).
+
+# Optimal Routes Length: After running the algorithm through several generations, it found routes that were significantly shorter than our initial random ones. 
+# At the first the distance reduced drastically from generation to generation but the closer we got to an optimal solution the smaller the change in distance was. 
+# This reminded me of the concept of diminishing return (“Ertragsgesetz”).
+
 import pandas as pd
 import numpy as np
 import random
@@ -214,6 +235,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-
-
-
